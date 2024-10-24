@@ -4,10 +4,15 @@
 #include <conio.h>
 #include <time.h>
 
-// Config
+// Configure
 
 #define PlayableMapSizeX 10
 #define PlayableMapSizeY 10
+
+char up_key = 'w';
+char down_key = 's';
+char left_key = 'a';
+char right_key = 'd';
 
 // Constants
 
@@ -18,29 +23,42 @@
 #define BorderY MapSizeY - 1
 #define MaxSnakeSize (PlayableMapSizeX * PlayableMapSizeY)
 
-char up_key = 'w';
-char down_key = 's';
-char left_key = 'a';
-char right_key = 'd';
+int Map[MapSizeY][MapSizeX]; /* -3 = [+], -2 = [-], -1 = [|], 0 = [ ], 1 = [<], 2 = [>], 3 = [^], 4 = [v], 5 = [*] */
 
-int main() {
-	struct SnakeParts {
-		int PositionX;
-		int PositionY;
-		int Shape;
-	};
+struct SnakeParts {
+	int PositionX;
+	int PositionY;
+	int Shape;
+};
 
-	struct SnakeParts SnakeArray[MaxSnakeSize];
+struct SnakeParts SnakeArray[MaxSnakeSize];
 
-	int SnakeSize = 1;
+int SnakeSize = 1;
+int NextDirection = 2;
+int PreviousDirection = 2;
+
+// Functions
+
+int createFood() {
+	srand(time(NULL));
+
+	int validPosition = 0;
+	int X = 0;
+	int Y = 0;
+
+	while (validPosition == 0) {
+		X = rand() % (PlayableMapSizeX + 1);
+	}
+}
+
+int resetGame() {
+	SnakeSize = 1;
 	SnakeArray[0].PositionX = 1;
 	SnakeArray[0].PositionY = 1;
 	SnakeArray[0].Shape = 2;
 
-	int NextDirection = 2;
-	int PreviousDirection = 2;
-
-	int Map[MapSizeY][MapSizeX]; /* -3 = [+], -2 = [-], -1 = [|], 0 = [ ], 1 = [<], 2 = [>], 3 = [^], 4 = [v], 5 = [*] */
+	NextDirection = 2;
+	PreviousDirection = 2;
 
 	for (int y = 0; y < MapSizeY; y++) {
 		for (int x = 0; x < MapSizeX; x++) {
@@ -59,9 +77,14 @@ int main() {
 		}
 	}
 
-	Map[2][1] = 5; // First Food
+	createFood(); // First Food
+}
+
+int main() {
+	resetGame();
 
 	int run = 1;
+	int code = 0;
 
 	while (run == 1) {
 		clock_t start = clock();
@@ -97,11 +120,15 @@ int main() {
 			int* HeadPositionX = &SnakeArray[0].PositionX;
 			int* HeadPositionY = &SnakeArray[0].PositionY;
 
+			Map[*HeadPositionY][*HeadPositionX] = 0;
+
 			int PreviousHeadPosX = *HeadPositionX;
 			int PreviousHeadPosY = *HeadPositionY;
 			int PreviousHeadShape = SnakeArray[0].Shape;
+
 			int* PreviousTailPosX = &SnakeArray[SnakeSize].PositionX;
 			int* PreviousTailPosY = &SnakeArray[SnakeSize].PositionY;
+			int* PreviousTailShape = &SnakeArray[SnakeSize].Shape;
 
 			// Move Head
 
@@ -119,7 +146,6 @@ int main() {
 			}
 
 			SnakeArray[0].Shape = NextDirection;
-			Map[*HeadPositionY][*HeadPositionX] = SnakeArray[0].Shape;
 			PreviousDirection = NextDirection;
 
 			// Check State
@@ -127,30 +153,43 @@ int main() {
 			system("cls");
 
 			if (*HeadPositionX < 0 || *HeadPositionX > MapSizeX - 1 || *HeadPositionY < 0 || *HeadPositionY > MapSizeY - 1) {
-				printf("\nOut of Bounds");
+				code = 300; // Error
 				run = 0;
 			}
 			else {
 				int* HeadValue = &Map[*HeadPositionY][*HeadPositionX];
 
-				if ((*HeadValue == -2) || (*HeadValue == -1) || (*HeadValue == 1) || (*HeadValue == 2) || (*HeadValue == 3) || (*HeadValue == 4)) {
-					printf("\nHit");
-					run = 0; // Lose Condition
+				if ((*HeadValue == -2) || (*HeadValue == -1)) {
+					code = 200; // Lose
+					run = 0;
 				}
 				else {
 					if (*HeadValue == 5) { // Food
-						SnakeSize = SnakeSize + 1;
-
-						if (SnakeSize == MaxSnakeSize) {
-							printf("\nWin");
-							run = 0; // Win Condition
+						SnakeSize ++;
+						
+						if (*PreviousTailPosX == 0) {
+							SnakeArray[SnakeSize - 1].PositionX = PreviousHeadPosX;
+							SnakeArray[SnakeSize - 1].PositionY = PreviousHeadPosY;
+							SnakeArray[SnakeSize - 1].PositionX = PreviousHeadShape;
 						}
 						else {
-							// Create New // iterate map until random value 0
+							SnakeArray[SnakeSize - 1].PositionX = *PreviousTailPosX;
+							SnakeArray[SnakeSize - 1].PositionY = *PreviousTailPosY;
+							SnakeArray[SnakeSize - 1].PositionX = *PreviousTailShape;
+						}
+
+						if (SnakeSize == MaxSnakeSize) {
+							code = 100; // Win
+							run = 0;
+						}
+						else {
+							createFood();
 						}
 					}
 				}
 			}
+
+			Map[*HeadPositionY][*HeadPositionX] = SnakeArray[0].Shape; // Finalise head position after checks
 
 			// Move Other Parts
 
@@ -158,6 +197,8 @@ int main() {
 				int* PosX = &SnakeArray[i].PositionX;
 				int* PosY = &SnakeArray[i].PositionY;
 				int* Shape = &SnakeArray[i].Shape;
+
+				Map[*PosY][*PosX] = 0;
 
 				if (i == 1) {
 					*PosX = PreviousHeadPosX;
@@ -175,7 +216,7 @@ int main() {
 
 			// Render
 
-			printf("Snake Head Position: (%d, %d)\n", SnakeArray[0].PositionX, SnakeArray[0].PositionY);
+			printf("Snake Head Position: (%d, %d)\n\n", SnakeArray[0].PositionX, SnakeArray[0].PositionY);
 
 			for (int y = 0; y < MapSizeY; y++) {
 				for (int x = 0; x < MapSizeX; x++) {
@@ -211,6 +252,19 @@ int main() {
 				}
 
 				printf("\n");
+			}
+
+			// Game State
+
+			if (code == 300) {
+				printf("\n\nOut of bounds\n");
+
+			}
+			else if (code == 200) {
+				printf("\n\nHit Border\n");
+			}
+			else if (code == 100) {
+				printf("\n\nWin\n");
 			}
 		}
 	}
