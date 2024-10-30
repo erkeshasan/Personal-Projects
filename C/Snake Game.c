@@ -58,8 +58,8 @@ void createFood() {
 	int Y = 0;
 
 	while (validPosition == 0) {
-		Y = rand() % (PlayableMapSizeY + 1);
-		X = rand() % (PlayableMapSizeX + 1);
+		Y = 1 + (rand() % (PlayableMapSizeY + 1));
+		X = 1 + (rand() % (PlayableMapSizeX + 1));
 
 		if (Map[Y][X] == 0) {
 			validPosition = 1;
@@ -69,7 +69,7 @@ void createFood() {
 	Map[Y][X] = 5;
 }
 
-int resetGame() {
+void resetGame() {
 	SnakeSize = 1;
 	SnakeArray[0].PositionX = 1;
 	SnakeArray[0].PositionY = 1;
@@ -140,6 +140,8 @@ int main() {
 			int* HeadPositionX = &SnakeArray[0].PositionX;
 			int* HeadPositionY = &SnakeArray[0].PositionY;
 
+			Map[*HeadPositionY][*HeadPositionX] = 0; // Previous Head Position
+
 			int NewHeadPosX = *HeadPositionX;
 			int NewHeadPosY = *HeadPositionY;
 
@@ -168,36 +170,38 @@ int main() {
 				int HeadValue = Map[NewHeadPosY][NewHeadPosX];
 
 				if ((HeadValue == -2) || (HeadValue == -1)) {
-					code = 200; // Lose
+					code = 200; // Hit Border
 					run = 0;
 				}
-				else {
-					if (HeadValue == 5) { // Food
-						SnakeSize++;
+				else if ((HeadValue == 1) || (HeadValue == 2) || (HeadValue == 3) || (HeadValue == 4)) {
+					code = 201; // Hit Self
+					run = 0;
+				}
+				else if (HeadValue == 5) { // Food
+					SnakeSize++;
 
-						SnakeArray[SnakeSize - 1].PositionX = SnakeArray[SnakeSize - 2].PositionX;
-						SnakeArray[SnakeSize - 1].PositionY = SnakeArray[SnakeSize - 2].PositionY;
-						SnakeArray[SnakeSize - 1].Shape = SnakeArray[SnakeSize - 2].Shape;
+					SnakeArray[SnakeSize - 1].PositionX = SnakeArray[SnakeSize - 2].PositionX;
+					SnakeArray[SnakeSize - 1].PositionY = SnakeArray[SnakeSize - 2].PositionY;
+					SnakeArray[SnakeSize - 1].Shape = SnakeArray[SnakeSize - 2].Shape;
 
-						if (SnakeSize == MaxSnakeSize) {
-							code = 100; // Win
-							run = 0;
-						}
-						else {
-							createFood();
-						}
+					if (SnakeSize == MaxSnakeSize) {
+						code = 100; // Win
+						run = 0;
+					}
+					else {
+						createFood();
 					}
 				}
 			}
 
 			// Move Parts
 
+			Map[SnakeArray[SnakeSize - 1].PositionY][SnakeArray[SnakeSize - 1].PositionX] = 0; // Previous Tail Position
+
 			for (int i = SnakeSize - 1; i > 0; i--) {
 				int* PosX = &SnakeArray[i].PositionX;
 				int* PosY = &SnakeArray[i].PositionY;
 				int* Shape = &SnakeArray[i].Shape;
-
-				Map[*PosY][*PosX] = 0;
 
 				*PosX = SnakeArray[i - 1].PositionX;
 				*PosY = SnakeArray[i - 1].PositionY;
@@ -207,8 +211,6 @@ int main() {
 			}
 
 			// Finalise head position after parts
-
-			Map[*HeadPositionY][*HeadPositionX] = 0;
 
 			*HeadPositionX = NewHeadPosX;
 			*HeadPositionY = NewHeadPosY;
@@ -270,9 +272,11 @@ int main() {
 				printf("\n");
 			}
 
-			printf("\nSnake Head Position: (%d, %d)\n", SnakeArray[0].PositionX, SnakeArray[0].PositionY);
+			printf("\nSnake Size: %d", SnakeSize);
 
-			printf("Snake Size: %d", SnakeSize);
+			for (int i = SnakeSize - 1; i >= 0; i--) {
+				printf("\n(%d, %d) + %d\n", SnakeArray[i].PositionX, SnakeArray[i].PositionY, SnakeArray[i].Shape);
+			}
 		}
 	}
 
@@ -284,6 +288,9 @@ int main() {
 	}
 	else if (code == 200) {
 		printf("\n\nHit Border\n");
+	}
+	else if (code == 201) {
+		printf("\n\nHit Self\n");
 	}
 	else if (code == 100) {
 		printf("\n\nWin\n");
