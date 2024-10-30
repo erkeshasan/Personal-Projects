@@ -4,9 +4,59 @@
 #include <conio.h>
 #include <time.h>
 
-// Configure
+// Console Functions
 
-#define PlayableMapSizeX 10
+void setCursorPosition(int x, int y) {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD coord = { x, y };
+	SetConsoleCursorPosition(hConsole, coord);
+}
+
+void setColor(int textColor, int backgroundColor) {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hConsole, textColor | (backgroundColor << 4));
+}
+
+// Game Functions
+
+void createFood(int Map[], int PlayableMapSizeX, int PlayableMapSizeY) {
+	srand(time(NULL));
+
+	int validX[PlayableMapSizeX];
+	int validY[PlayableMapSizeY];
+
+
+
+	int X = 0;
+	int Y = 0;
+
+	int validX = 0;
+
+
+	while (validPosition == 0) {
+		Y = 1 + (rand() % (PlayableMapSizeY + 1));
+		X = 1 + (rand() % (PlayableMapSizeX + 1));
+
+		if (Map[Y][X] == 0) {
+			validPosition = 1;
+		}
+	}
+
+	Map[Y][X] = 5;
+}
+
+void NewGame() {
+	// Configure
+
+int playableMapX = 0;
+int playableMapX = 0;
+int foodCount = 0;
+
+printf("\nMap Size X: ");
+scanf("%d", &playableMapX)
+
+
+#define PlayableMapSizeX playableMapX
 #define PlayableMapSizeY 10
 
 char up_key = 'w';
@@ -37,39 +87,6 @@ int SnakeSize = 1;
 int NextDirection = 2;
 int PreviousDirection = 2;
 
-// Functions
-
-void setCursorPosition(int x, int y) {
-	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	COORD coord = { x, y };
-	SetConsoleCursorPosition(hConsole, coord);
-}
-
-void setColor(int textColor, int backgroundColor) {
-	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, textColor | (backgroundColor << 4));
-}
-
-void createFood() {
-	srand(time(NULL));
-
-	int validPosition = 0;
-	int X = 0;
-	int Y = 0;
-
-	while (validPosition == 0) {
-		Y = 1 + (rand() % (PlayableMapSizeY + 1));
-		X = 1 + (rand() % (PlayableMapSizeX + 1));
-
-		if (Map[Y][X] == 0) {
-			validPosition = 1;
-		}
-	}
-
-	Map[Y][X] = 5;
-}
-
-void resetGame() {
 	SnakeSize = 1;
 	SnakeArray[0].PositionX = 1;
 	SnakeArray[0].PositionY = 1;
