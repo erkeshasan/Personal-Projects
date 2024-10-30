@@ -39,7 +39,18 @@ int PreviousDirection = 2;
 
 // Functions
 
-int createFood() {
+void setCursorPosition(int x, int y) {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD coord = { x, y };
+	SetConsoleCursorPosition(hConsole, coord);
+}
+
+void setColor(int textColor, int backgroundColor) {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hConsole, textColor | (backgroundColor << 4));
+}
+
+void createFood() {
 	srand(time(NULL));
 
 	int validPosition = 0;
@@ -47,8 +58,15 @@ int createFood() {
 	int Y = 0;
 
 	while (validPosition == 0) {
+		Y = rand() % (PlayableMapSizeY + 1);
 		X = rand() % (PlayableMapSizeX + 1);
+
+		if (Map[Y][X] == 0) {
+			validPosition = 1;
+		}
 	}
+
+	Map[Y][X] = 5;
 }
 
 int resetGame() {
@@ -116,67 +134,50 @@ int main() {
 			}
 		}
 
-		if (start % 1000 == 0) { // Tick
+		if (start % 500 == 0) { // Tick
+			// Move Head
+
 			int* HeadPositionX = &SnakeArray[0].PositionX;
 			int* HeadPositionY = &SnakeArray[0].PositionY;
 
-			Map[*HeadPositionY][*HeadPositionX] = 0;
-
-			int PreviousHeadPosX = *HeadPositionX;
-			int PreviousHeadPosY = *HeadPositionY;
-			int PreviousHeadShape = SnakeArray[0].Shape;
-
-			int* PreviousTailPosX = &SnakeArray[SnakeSize].PositionX;
-			int* PreviousTailPosY = &SnakeArray[SnakeSize].PositionY;
-			int* PreviousTailShape = &SnakeArray[SnakeSize].Shape;
-
-			// Move Head
+			int NewHeadPosX = *HeadPositionX;
+			int NewHeadPosY = *HeadPositionY;
 
 			if (NextDirection == 1) {
-				*HeadPositionX = *HeadPositionX - 1;
+				NewHeadPosX = *HeadPositionX - 1;
 			}
 			else if (NextDirection == 2) {
-				*HeadPositionX = *HeadPositionX + 1;
+				NewHeadPosX = *HeadPositionX + 1;
 			}
 			else if (NextDirection == 3) {
-				*HeadPositionY = *HeadPositionY - 1;
+				NewHeadPosY = *HeadPositionY - 1;
 			}
 			else {
-				*HeadPositionY = *HeadPositionY + 1;
+				NewHeadPosY = *HeadPositionY + 1;
 			}
-
-			SnakeArray[0].Shape = NextDirection;
-			PreviousDirection = NextDirection;
 
 			// Check State
 
-			system("cls");
+			setCursorPosition(0, 0);
 
-			if (*HeadPositionX < 0 || *HeadPositionX > MapSizeX - 1 || *HeadPositionY < 0 || *HeadPositionY > MapSizeY - 1) {
+			if (NewHeadPosX < 0 || NewHeadPosX > MapSizeX - 1 || NewHeadPosY < 0 || NewHeadPosY > MapSizeY - 1) {
 				code = 300; // Error
 				run = 0;
 			}
 			else {
-				int* HeadValue = &Map[*HeadPositionY][*HeadPositionX];
+				int HeadValue = Map[NewHeadPosY][NewHeadPosX];
 
-				if ((*HeadValue == -2) || (*HeadValue == -1)) {
+				if ((HeadValue == -2) || (HeadValue == -1)) {
 					code = 200; // Lose
 					run = 0;
 				}
 				else {
-					if (*HeadValue == 5) { // Food
-						SnakeSize ++;
-						
-						if (*PreviousTailPosX == 0) {
-							SnakeArray[SnakeSize - 1].PositionX = PreviousHeadPosX;
-							SnakeArray[SnakeSize - 1].PositionY = PreviousHeadPosY;
-							SnakeArray[SnakeSize - 1].PositionX = PreviousHeadShape;
-						}
-						else {
-							SnakeArray[SnakeSize - 1].PositionX = *PreviousTailPosX;
-							SnakeArray[SnakeSize - 1].PositionY = *PreviousTailPosY;
-							SnakeArray[SnakeSize - 1].PositionX = *PreviousTailShape;
-						}
+					if (HeadValue == 5) { // Food
+						SnakeSize++;
+
+						SnakeArray[SnakeSize - 1].PositionX = SnakeArray[SnakeSize - 2].PositionX;
+						SnakeArray[SnakeSize - 1].PositionY = SnakeArray[SnakeSize - 2].PositionY;
+						SnakeArray[SnakeSize - 1].Shape = SnakeArray[SnakeSize - 2].Shape;
 
 						if (SnakeSize == MaxSnakeSize) {
 							code = 100; // Win
@@ -189,49 +190,61 @@ int main() {
 				}
 			}
 
-			Map[*HeadPositionY][*HeadPositionX] = SnakeArray[0].Shape; // Finalise head position after checks
+			// Move Parts
 
-			// Move Other Parts
-
-			for (int i = (SnakeSize - 1); i > 0; i--) {
+			for (int i = SnakeSize - 1; i > 0; i--) {
 				int* PosX = &SnakeArray[i].PositionX;
 				int* PosY = &SnakeArray[i].PositionY;
 				int* Shape = &SnakeArray[i].Shape;
 
 				Map[*PosY][*PosX] = 0;
 
-				if (i == 1) {
-					*PosX = PreviousHeadPosX;
-					*PosY = PreviousHeadPosY;
-					*Shape = PreviousHeadShape;
-				}
-				else {
-					*PosX = SnakeArray[i - 1].PositionX;
-					*PosY = SnakeArray[i - 1].PositionY;
-					*Shape = SnakeArray[i - 1].Shape;
-				}
+				*PosX = SnakeArray[i - 1].PositionX;
+				*PosY = SnakeArray[i - 1].PositionY;
+				*Shape = SnakeArray[i - 1].Shape;
 
 				Map[*PosY][*PosX] = *Shape;
 			}
 
-			// Render
+			// Finalise head position after parts
 
-			printf("Snake Head Position: (%d, %d)\n\n", SnakeArray[0].PositionX, SnakeArray[0].PositionY);
+			Map[*HeadPositionY][*HeadPositionX] = 0;
+
+			*HeadPositionX = NewHeadPosX;
+			*HeadPositionY = NewHeadPosY;
+
+			PreviousDirection = NextDirection;
+			SnakeArray[0].Shape = NextDirection;
+
+			Map[*HeadPositionY][*HeadPositionX] = NextDirection;
+
+			// Render
 
 			for (int y = 0; y < MapSizeY; y++) {
 				for (int x = 0; x < MapSizeX; x++) {
 					int value = Map[y][x];
 
+					if (y == SnakeArray[0].PositionY && x == SnakeArray[0].PositionX) {
+						setColor(11, 0);
+					}
+					else {
+						setColor(9, 0);
+					}
+
 					if (value == -3) {
+						setColor(12, 0);
 						printf("[+]");
 					}
 					else if (value == -2) {
+						setColor(12, 0);
 						printf("[-]");
 					}
 					else if (value == -1) {
+						setColor(12, 0);
 						printf("[|]");
 					}
 					else if (value == 0) {
+						setColor(7, 0);
 						printf("[ ]");
 					}
 					else if (value == 1) {
@@ -247,25 +260,32 @@ int main() {
 						printf("[v]");
 					}
 					else {
+						setColor(6, 0);
 						printf("[*]");
 					}
+
+					setColor(7, 0);
 				}
 
 				printf("\n");
 			}
 
-			// Game State
+			printf("\nSnake Head Position: (%d, %d)\n", SnakeArray[0].PositionX, SnakeArray[0].PositionY);
 
-			if (code == 300) {
-				printf("\n\nOut of bounds\n");
-
-			}
-			else if (code == 200) {
-				printf("\n\nHit Border\n");
-			}
-			else if (code == 100) {
-				printf("\n\nWin\n");
-			}
+			printf("Snake Size: %d", SnakeSize);
 		}
+	}
+
+	// Game End State
+
+	if (code == 300) {
+		printf("\n\nOut of bounds\n");
+
+	}
+	else if (code == 200) {
+		printf("\n\nHit Border\n");
+	}
+	else if (code == 100) {
+		printf("\n\nWin\n");
 	}
 }
