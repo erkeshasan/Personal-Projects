@@ -188,6 +188,12 @@ while (playing)
     bool validBet = false;
     double bet = 0;
 
+    if (money <= 0)
+    {
+        Console.Write("\n\nNew Money: $");
+        money = Convert.ToDouble(Console.ReadLine());
+    }
+
     Console.Write("\n\nMoney: $" + money);
 
     while (!validBet)
@@ -246,11 +252,20 @@ while (playing)
         int PlayerCardCount = IntArrayElementCount(PlayerCardIDs);
         int PlayerHandValue = CalculateHighestSafeValue(PlayerCardIDs);
 
+        // Player Bust
+
+        if (PlayerHandValue > 21)
+        {
+            Console.Write("\n\nPlayer Bust!\n\n");
+            money -= bet;
+            run = false;
+        }
+
         // Dealer Print
 
         Console.Write("\n\nDealer:\n");
 
-        if (stand)
+        if (stand || !run)
         {
             for (int CardIndex = 0; CardIndex < DealerCardCount; CardIndex++)
             {
@@ -336,15 +351,6 @@ while (playing)
                     run = false;
                 }
             }
-        }
-
-        // Player Bust
-
-        if (PlayerHandValue > 21)
-        {
-            Console.Write("\n\nPlayer Bust!\n\n");
-            money -= bet;
-            run = false;
         }
 
         // Natural Blackjack Rule
