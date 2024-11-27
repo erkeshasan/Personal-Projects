@@ -71,85 +71,63 @@ void newConfiguration() {
 	previousDirection = 2;
 }
 
-int** newMap() {
-	int** map = (int**)malloc(mapSizeY * sizeof(int*));
+int** newMatrix(int SizeY, int SizeX) {
+	int** matrix = (int**)malloc(SizeY * sizeof(int*));
 
-	if (map == NULL) {
-		printf("\nMemory allocation for map rows failed!");
+	if (matrix == NULL) {
+		printf("\nMemory allocation for rows failed!");
 		return;
 	}
 
-	for (int i = 0; i < mapSizeY; i++) {
-		map[i] = (int*)malloc(mapSizeY * sizeof(int));
+	for (int i = 0; i < SizeX; i++) {
+		matrix[i] = (int*)malloc(SizeX * sizeof(int));
 
-		if (map[i] == NULL) {
-			printf("\nMemory allocation for map columns in row %d failed!", i);
+		if (matrix[i] == NULL) {
+			printf("\nMemory allocation for columns in row %d failed!", i);
 			return;
 		}
 	}
 
-	return map;
+	return matrix;
 }
 
-void createFood() {
+void freeMatrixMemory(int** matrix, int x) {
+	for (int i = 0; i < x; i++) {
+		free(matrix[i]);
+	}
+
+	free(matrix);
+}
+
+void createFood(int** map) {
 	srand(time(NULL));
 
-	int validX[1];
-	int validY[1];
+	
 
+	for (int Y = 0; Y < mapSizeY; Y++) {
+		for (int X = 0; X < mapSizeX; X++) {
+			if (map[Y][X] == 0) {
+				validMap[Y][X] = 1;
+			}
+		}
+	}
 
+	
+	int** validMap = newMatrix(mapSizeY, mapSizeX);
 
-	int X = 0;
-	int Y = 0;
-
-	int validX = 0;
-
+	int Y, X;
+	int validPosition = 0;
 
 	while (validPosition == 0) {
 		Y = 1 + (rand() % (PlayableMapSizeY + 1));
 		X = 1 + (rand() % (PlayableMapSizeX + 1));
 
-		if (Map[Y][X] == 0) {
+		if (validMap[Y][X] == 0) {
 			validPosition = 1;
 		}
 	}
 
-	Map[Y][X] = 5;
-}
-
-void freeMapMemory(int** map, int x) {
-	for (int i = 0; i < x; i++) {
-		free(map[i]);
-	}
-
-	free(map);
-}
-
-int newGame() {
-
-	
-
-	// -3 = [+], -2 = [-], -1 = [|], 0 = [ ], 1 = [<], 2 = [>], 3 = [^], 4 = [v], 5 = [*]
-
-	for (int y = 0; y < MapSizeY; y++) {
-		for (int x = 0; x < MapSizeX; x++) {
-			if ((y == 0 && x == 0) || (y == 0 && x == BorderX) || (y == BorderY && x == 0) || (y == BorderY && x == BorderX)) {
-				Map[y][x] = -3;
-			}
-			else if ((y == 0) || (y == BorderY)) {
-				Map[y][x] = -2;
-			}
-			else if ((x == 0) || (x == BorderX)) {
-				Map[y][x] = -1;
-			}
-			else {
-				Map[y][x] = 0;
-			}
-		}
-	}
-
-	createFood(); // Create First Food
-	return 1;
+	map[Y][X] = 5;
 }
 
 int main() {
@@ -157,7 +135,29 @@ int main() {
 		newConfiguration();
 		int** map = newMap();
 
-		struct SnakeParts SnakeArray[maxSnakeSize];
+		// -3 = [+], -2 = [-], -1 = [|], 0 = [ ], 1 = [<], 2 = [>], 3 = [^], 4 = [v], 5 = [*]
+
+		for (int y = 0; y < mapSizeY; y++) {
+			for (int x = 0; x < mapSizeX; x++) {
+				if ((y == 0 && x == 0) || (y == 0 && x == borderX) || (y == borderY && x == 0) || (y == borderY && x == borderX)) {
+					map[y][x] = -3;
+				}
+				else if ((y == 0) || (y == borderY)) {
+					map[y][x] = -2;
+				}
+				else if ((x == 0) || (x == borderX)) {
+					map[y][x] = -1;
+				}
+				else {
+					map[y][x] = 0;
+				}
+			}
+		}
+
+		createFood(); // Create First Food
+		return 1;
+
+		struct SnakeParts* SnakeArray = (struct SnakeParts*)malloc(maxSnakeSize * sizeof(struct SnakeParts));
 		SnakeArray[0].PositionX = 1;
 		SnakeArray[0].PositionY = 1;
 		SnakeArray[0].Shape = 2;
