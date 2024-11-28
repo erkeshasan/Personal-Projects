@@ -4,18 +4,19 @@
 #include <conio.h>
 #include <time.h>
 
-// Console Functions
+// Constants
 
-void setCursorPosition(int x, int y) {
-	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	COORD coord = { x, y };
-	SetConsoleCursorPosition(hConsole, coord);
-}
+typedef struct {
+	int PositionX;
+	int PositionY;
+	int Shape;
+} SnakeParts;
 
-void setColor(int textColor, int backgroundColor) {
-	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(hConsole, textColor | (backgroundColor << 4));
-}
+typedef struct {
+	int** data;
+	int sizeY;
+	int sizeX;
+} MatrixObject;
 
 // Variables
 
@@ -36,22 +37,22 @@ char right_key = 'd';
 int foodCount;
 
 int maxSnakeSize;
-
 int snakeSize;
 int nextDirection;
 int previousDirection;
 
-typedef struct {
-	int PositionX;
-	int PositionY;
-	int Shape;
-} SnakeParts;
+// Console Functions
 
-typedef struct {
-	int** data;
-	int sizeY;
-	int sizeX;
-} Matrix;
+void setCursorPosition(int x, int y) {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD coord = { x, y };
+	SetConsoleCursorPosition(hConsole, coord);
+}
+
+void setColor(int textColor, int backgroundColor) {
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hConsole, textColor | (backgroundColor << 4));
+}
 
 // Game Functions
 
@@ -77,8 +78,8 @@ void newConfiguration() {
 	previousDirection = 2;
 }
 
-Matrix createMatrix(int sizeY, int sizeX) {
-	Matrix matrix;
+MatrixObject createMatrix(int sizeY, int sizeX) {
+	MatrixObject matrix;
 	matrix.sizeY = sizeY;
 	matrix.sizeX = sizeX;
 
@@ -101,65 +102,50 @@ Matrix createMatrix(int sizeY, int sizeX) {
 	return matrix;
 }
 
-void freeMatrix(Matrix* matrix) {
-	for (int i = 0; i < matrix->sizeY; i++) {
-		free(matrix->data[i]);
+void freeMatrixMemory(MatrixObject* matrixObject) {
+	for (int i = 0; i < matrixObject->sizeY; i++) {
+		free(matrixObject->data[i]);
 	}
 
-	free(matrix->data);
+	free(matrixObject->data);
 }
 
-void createFood(Matrix* mapMatrix) {
-	int* validY = (int*)malloc(mapMatrix->sizeY * sizeof(int));
-	int** validX = (int**)malloc(mapMatrix->sizeY * sizeof(int*));
+void createFood(MatrixObject* mapMatrix) {
+	int sizeY = mapMatrix->sizeY;
+	int sizeX = mapMatrix->sizeX;
 
-	int validIndexY = 0;
+	int* validY = (int*)malloc(sizeY * sizeof(int));
+	int* validCorrespondingX = (int*)malloc(sizeY * sizeof(int));
+	int validSizeY = 0;
 
-	for (int Y = 0; Y < mapMatrix->sizeY; Y++) {
-		validX[validIndexY] = (int*)malloc(mapMatrix->sizeY * sizeof(int));
+	for (int Y = 0; Y < sizeY; Y++) {
+		int* validX = (int*)malloc(sizeX * sizeof(int));
+		int validSizeX = 0;
 
-		int validIndexX = 0;
-
-		for (int X = 0; X < mapMatrix->sizeX; X++) {
+		for (int X = 0; X < sizeX; X++) {
 			if (mapMatrix->data[Y][X] == 0) {
-				validX[validIndexY][validIndexX] = X;
-
-				validIndexX = validIndexX + 1;
+				validX[validSizeX] = X;
+				validSizeX = validSizeX + 1;
 			}
 		}
 
-		if (validIndexX > 0) {
-			validY[validIndexY] = Y;
+		if (validSizeX > 0) {
+			validY[validSizeY] = Y;
+			validCorrespondingX[validSizeY] = validX[(rand() % validSizeX)];
 
-			validIndexY = validIndexY + 1;
+			validSizeY = validSizeY + 1;
 		}
+
+		free(validX);
 	}
 
+	int Y = validY[(rand() % validSizeY)];
+	free(validY);
 
-	for (int Y = 0; Y < mapSizeY; Y++) {
-		for (int X = 0; X < mapSizeX; X++) {
-			if (map[Y][X] == 0) {
-				validMap[Y][X] = 1;
-			}
-		}
-	}
+	int X = validCorrespondingX[(rand() % validSizeY)];
+	free(validCorrespondingX);
 
-
-	int** validMap = newMatrix(mapSizeY, mapSizeX);
-
-	int Y, X;
-	int validPosition = 0;
-
-	while (validPosition == 0) {
-		Y = 1 + (rand() % (PlayableMapSizeY + 1));
-		X = 1 + (rand() % (PlayableMapSizeX + 1));
-
-		if (validMap[Y][X] == 0) {
-			validPosition = 1;
-		}
-	}
-
-	map[Y][X] = 5;
+	mapMatrix->data[Y][X] = 5;
 }
 
 int main() {
@@ -172,7 +158,7 @@ int main() {
 
 		// Initialise Map // -3 = [+], -2 = [-], -1 = [|], 0 = [ ], 1 = [<], 2 = [>], 3 = [^], 4 = [v], 5 = [*]
 
-		Matrix mapMatrix = createMatrix(mapSizeY, mapSizeX);
+		MatrixObject mapMatrix = createMatrix(mapSizeY, mapSizeX);
 
 		for (int y = 0; y < mapSizeY; y++) {
 			for (int x = 0; x < mapSizeX; x++) {
@@ -198,8 +184,8 @@ int main() {
 		// Initialise Snake
 
 		SnakeParts* SnakeArray = (struct SnakeParts*)malloc(maxSnakeSize * sizeof(SnakeParts));
-		SnakeArray[0].PositionX = 1;
 		SnakeArray[0].PositionY = 1;
+		SnakeArray[0].PositionX = 1;
 		SnakeArray[0].Shape = 2;
 
 		int run = 1;
@@ -207,6 +193,8 @@ int main() {
 
 		while (run == 1) {
 			clock_t start = clock();
+
+			// Movement Input
 
 			char c;
 
@@ -235,16 +223,18 @@ int main() {
 				}
 			}
 
-			if (start % 500 == 0) { // Tick
+			// Game Tick
+
+			if (start % 500 == 0) {
 				// Move Head
 
-				int* HeadPositionX = &SnakeArray[0].PositionX;
 				int* HeadPositionY = &SnakeArray[0].PositionY;
+				int* HeadPositionX = &SnakeArray[0].PositionX;
 
 				mapMatrix.data[*HeadPositionY][*HeadPositionX] = 0; // Empty Previous Head Position
 
-				int NewHeadPosX = *HeadPositionX;
 				int NewHeadPosY = *HeadPositionY;
+				int NewHeadPosX = *HeadPositionX;
 
 				if (nextDirection == 1) {
 					NewHeadPosX = *HeadPositionX - 1;
@@ -263,7 +253,7 @@ int main() {
 
 				setCursorPosition(0, 0);
 
-				if (NewHeadPosX < 0 || NewHeadPosX > mapSizeX - 1 || NewHeadPosY < 0 || NewHeadPosY > mapSizeY - 1) {
+				if (NewHeadPosY < 0 || NewHeadPosY > borderY || NewHeadPosX < 0 || NewHeadPosX > borderX) {
 					exitCode = 300; // Out of Bounds
 					run = 0;
 				}
@@ -278,11 +268,12 @@ int main() {
 						exitCode = 201; // Hit Self
 						run = 0;
 					}
-					else if (HeadValue == 5) { // Food
+					else if (HeadValue == 5) { // Hit Food
 						snakeSize++;
 
-						SnakeArray[snakeSize - 1].PositionX = SnakeArray[snakeSize - 2].PositionX;
 						SnakeArray[snakeSize - 1].PositionY = SnakeArray[snakeSize - 2].PositionY;
+						SnakeArray[snakeSize - 1].PositionX = SnakeArray[snakeSize - 2].PositionX;
+						
 						SnakeArray[snakeSize - 1].Shape = SnakeArray[snakeSize - 2].Shape;
 
 						if (snakeSize == maxSnakeSize) {
@@ -300,18 +291,18 @@ int main() {
 				mapMatrix.data[SnakeArray[snakeSize - 1].PositionY][SnakeArray[snakeSize - 1].PositionX] = 0; // Empty Previous Tail Position
 
 				for (int i = snakeSize - 1; i > 0; i--) {
-					int* PosX = &SnakeArray[i].PositionX;
 					int* PosY = &SnakeArray[i].PositionY;
+					int* PosX = &SnakeArray[i].PositionX;
 					int* Shape = &SnakeArray[i].Shape;
 
-					*PosX = SnakeArray[i - 1].PositionX;
 					*PosY = SnakeArray[i - 1].PositionY;
+					*PosX = SnakeArray[i - 1].PositionX;
 					*Shape = SnakeArray[i - 1].Shape;
 
 					mapMatrix.data[*PosY][*PosX] = *Shape;
 				}
 
-				// Finalise head position after parts
+				// Finalise Head Position
 
 				*HeadPositionX = NewHeadPosX;
 				*HeadPositionY = NewHeadPosY;
@@ -395,5 +386,9 @@ int main() {
 		else if (exitCode == 100) {
 			printf("\n\nWin\n");
 		}
+
+		// Free Map Memory
+
+		freeMatrixMemory(&mapMatrix);
 	}
 }
