@@ -58,13 +58,13 @@ void setColor(int textColor, int backgroundColor) {
 
 void newConfiguration() {
 	printf("\nMap Size X: ");
-	scanf("%d", &playableMapSizeX);
+	scanf_s("%d", &playableMapSizeX);
 
 	printf("\nMap Size Y: ");
-	scanf("%d", &playableMapSizeY);
+	scanf_s("%d", &playableMapSizeY);
 
 	printf("\nFood Count: ");
-	scanf("%d", &foodCount);
+	scanf_s("%d", &foodCount);
 
 	mapSizeX = playableMapSizeX + 2;
 	mapSizeY = playableMapSizeY + 2;
@@ -179,7 +179,9 @@ int main() {
 
 		// Initialise Food
 
-		createFood(&mapMatrix);
+		for (int i = 0; i < foodCount; i++) {
+			createFood(&mapMatrix);
+		}
 
 		// Initialise Snake
 
@@ -189,7 +191,19 @@ int main() {
 		SnakeArray[0].Shape = 2;
 
 		int run = 1;
+		int lastGameTick = 0;
 		int exitCode = 0;
+
+		if (AllocConsole()) {
+			// Redirect the standard output (stdout) to the new console for debugging
+			freopen("CONOUT$", "w", stdout);
+
+			// Print debug data in the second console
+			printf("This is the second console window where we print debug data.\n");
+		}
+		else {
+			printf("Failed to allocate new console\n");
+		}
 
 		while (run == 1) {
 			clock_t start = clock();
@@ -273,7 +287,7 @@ int main() {
 
 						SnakeArray[snakeSize - 1].PositionY = SnakeArray[snakeSize - 2].PositionY;
 						SnakeArray[snakeSize - 1].PositionX = SnakeArray[snakeSize - 2].PositionX;
-						
+
 						SnakeArray[snakeSize - 1].Shape = SnakeArray[snakeSize - 2].Shape;
 
 						if (snakeSize == maxSnakeSize) {
@@ -367,7 +381,7 @@ int main() {
 				printf("\nSnake Size: %d", snakeSize);
 
 				for (int i = snakeSize - 1; i >= 0; i--) {
-					printf("\n(%d, %d) + %d\n", SnakeArray[i].PositionX, SnakeArray[i].PositionY, SnakeArray[i].Shape);
+					printf("\n(%d, %d) + %d          ", SnakeArray[i].PositionX, SnakeArray[i].PositionY, SnakeArray[i].Shape);
 				}
 			}
 		}
