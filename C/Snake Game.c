@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
-#include <conio.h>
 #include <time.h>
 
 // Constants
@@ -18,7 +17,14 @@ typedef struct {
 	int sizeX;
 } MatrixObject;
 
+#define TickSecond 0.5 * CLOCKS_PER_SEC
+
 // Variables
+
+char up_key = 'w';
+char down_key = 's';
+char left_key = 'a';
+char right_key = 'd';
 
 int playableMapSizeX;
 int playableMapSizeY;
@@ -29,17 +35,14 @@ int mapSizeY;
 int borderX;
 int borderY;
 
-char up_key = 'w';
-char down_key = 's';
-char left_key = 'a';
-char right_key = 'd';
-
+int maxFoodCount;
 int foodCount;
 
 int maxSnakeSize;
 int snakeSize;
-int nextDirection;
+
 int previousDirection;
+int nextDirection;
 
 // Console Functions
 
@@ -63,8 +66,9 @@ void newConfiguration() {
 	printf("\nMap Size Y: ");
 	scanf_s("%d", &playableMapSizeY);
 
-	printf("\nFood Count: ");
-	scanf_s("%d", &foodCount);
+	printf("\nMax Food Count: ");
+	scanf_s("%d", &maxFoodCount);
+	foodCount = 0;
 
 	mapSizeX = playableMapSizeX + 2;
 	mapSizeY = playableMapSizeY + 2;
@@ -72,8 +76,9 @@ void newConfiguration() {
 	borderX = mapSizeX - 1;
 	borderY = mapSizeY - 1;
 
-	maxSnakeSize = playableMapSizeX * playableMapSizeY;
 	snakeSize = 1;
+	maxSnakeSize = playableMapSizeX * playableMapSizeY;
+
 	nextDirection = 2;
 	previousDirection = 2;
 }
@@ -139,13 +144,16 @@ void createFood(MatrixObject* mapMatrix) {
 		free(validX);
 	}
 
-	int Y = validY[(rand() % validSizeY)];
+	if (validSizeY > 0) {
+		int Y = validY[(rand() % validSizeY)];
+		int X = validCorrespondingX[(rand() % validSizeY)];
+
+		mapMatrix->data[Y][X] = 5;
+		foodCount = foodCount + 1;
+	}
+
 	free(validY);
-
-	int X = validCorrespondingX[(rand() % validSizeY)];
 	free(validCorrespondingX);
-
-	mapMatrix->data[Y][X] = 5;
 }
 
 int main() {
@@ -155,6 +163,12 @@ int main() {
 		// Initialise Config
 
 		newConfiguration();
+
+#ifdef _WIN32
+		system("cls");  // Windows
+#else
+		system("clear");  // Unix/Linux/Mac
+#endif
 
 		// Initialise Map // -3 = [+], -2 = [-], -1 = [|], 0 = [ ], 1 = [<], 2 = [>], 3 = [^], 4 = [v], 5 = [*]
 
@@ -177,36 +191,30 @@ int main() {
 			}
 		}
 
-		// Initialise Food
-
-		for (int i = 0; i < foodCount; i++) {
-			createFood(&mapMatrix);
-		}
-
 		// Initialise Snake
 
-		SnakeParts* SnakeArray = (struct SnakeParts*)malloc(maxSnakeSize * sizeof(SnakeParts));
+		SnakeParts* SnakeArray = (SnakeParts*)malloc(maxSnakeSize * sizeof(SnakeParts));
 		SnakeArray[0].PositionY = 1;
 		SnakeArray[0].PositionX = 1;
 		SnakeArray[0].Shape = 2;
 
+		mapMatrix.data[1][1] = 2;
+
+		// Initialise Food
+
+		for (int i = 0; i < maxFoodCount; i++) {
+			createFood(&mapMatrix);
+		}
+
+		// Begin
+
 		int run = 1;
-		int lastGameTick = 0;
 		int exitCode = 0;
 
-		if (AllocConsole()) {
-			// Redirect the standard output (stdout) to the new console for debugging
-			freopen("CONOUT$", "w", stdout);
-
-			// Print debug data in the second console
-			printf("This is the second console window where we print debug data.\n");
-		}
-		else {
-			printf("Failed to allocate new console\n");
-		}
+		clock_t lastTick = clock();
 
 		while (run == 1) {
-			clock_t start = clock();
+			clock_t newTick = clock();
 
 			// Movement Input
 
@@ -239,12 +247,15 @@ int main() {
 
 			// Game Tick
 
-			if (start % 500 == 0) {
+			if (newTick - lastTick > TickSecond) {
+				lastTick = newTick;
+
+				previousDirection = nextDirection;
+
 				// Move Head
 
 				int* HeadPositionY = &SnakeArray[0].PositionY;
 				int* HeadPositionX = &SnakeArray[0].PositionX;
-
 				mapMatrix.data[*HeadPositionY][*HeadPositionX] = 0; // Empty Previous Head Position
 
 				int NewHeadPosY = *HeadPositionY;
@@ -287,16 +298,14 @@ int main() {
 
 						SnakeArray[snakeSize - 1].PositionY = SnakeArray[snakeSize - 2].PositionY;
 						SnakeArray[snakeSize - 1].PositionX = SnakeArray[snakeSize - 2].PositionX;
-
 						SnakeArray[snakeSize - 1].Shape = SnakeArray[snakeSize - 2].Shape;
 
 						if (snakeSize == maxSnakeSize) {
 							exitCode = 100; // Win
 							run = 0;
 						}
-						else {
-							createFood(&mapMatrix);
-						}
+
+						foodCount = foodCount - 1;
 					}
 				}
 
@@ -320,11 +329,15 @@ int main() {
 
 				*HeadPositionX = NewHeadPosX;
 				*HeadPositionY = NewHeadPosY;
-
-				previousDirection = nextDirection;
 				SnakeArray[0].Shape = nextDirection;
 
 				mapMatrix.data[*HeadPositionY][*HeadPositionX] = nextDirection;
+
+				// New Food
+
+				if (maxFoodCount - foodCount > 0) {
+					createFood(&mapMatrix);
+				}
 
 				// Render
 
@@ -378,11 +391,7 @@ int main() {
 					printf("\n");
 				}
 
-				printf("\nSnake Size: %d", snakeSize);
-
-				for (int i = snakeSize - 1; i >= 0; i--) {
-					printf("\n(%d, %d) + %d          ", SnakeArray[i].PositionX, SnakeArray[i].PositionY, SnakeArray[i].Shape);
-				}
+				printf("\nSnake Size: %d / %d", snakeSize, maxSnakeSize);
 			}
 		}
 
