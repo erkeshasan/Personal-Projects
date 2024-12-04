@@ -1,0 +1,26 @@
+import pyautogui
+from PIL import ImageGrab
+
+# Set the target color (RGB format)
+target_color = (255, 0, 0)  # Red color (you can change this)
+
+# Set the Y-axis value (static)
+y_coordinate = 300  # Change this to the desired Y position
+
+# Get the screen size
+screen_width, screen_height = pyautogui.size()
+
+# Capture the screen for the row at the given Y-coordinate
+# Note: ImageGrab.grab() takes a bounding box in the form of (left, top, right, bottom)
+screenshot = ImageGrab.grab(bbox=(0, y_coordinate, screen_width, y_coordinate + 1))
+
+# Loop through each pixel along the X-axis (in the row at Y-coordinate)
+for x in range(screen_width):
+    # Get the color of the pixel at (x, y_coordinate)
+    pixel_color = screenshot.getpixel((x, 0))
+    
+    # If the color matches the target color, click that position
+    if pixel_color == target_color:
+        pyautogui.click(x, y_coordinate)
+        print(f"Clicked on position ({x}, {y_coordinate})")
+        break  # Stop after clicking the first match
